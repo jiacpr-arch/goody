@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>วันดีดี ที่ควรรู้</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #fff;
+    color: #222;
+    padding: 0;
+  }
+  .loading {
+    padding: 48px 24px;
+    text-align: center;
+    color: #999;
+    font-size: 18px;
+  }
+  .empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: #aaa;
+    font-size: 16px;
+  }
+  /* article styles are injected via content_html from Supabase */
+  article {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
+    background: #fff;
+  }
+  article img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-bottom: 24px;
+  }
+  .read-more-wrap {
+    text-align: center;
+    padding: 16px 0 32px;
+  }
+  .read-more-btn {
+    display: inline-block;
+    background: #222;
+    color: #fff;
+    padding: 14px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .read-more-btn:hover { background: #444; }
+</style>
+</head>
+<body>
+
+<div id="app"><div class="loading">⏳ กำลังโหลด...</div></div>
+
+<script>
+const SUPABASE_URL = 'https://tpoiyykbgsgnrdwzgzvn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwb2l5eWtiZ3NnbnJkd3pnenZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTUwMDIsImV4cCI6MjA5MDIzMTAwMn0.c7Ow_20mpmcDqDdMQ5qnsDV6-RKAO-7-eM1y-EsEXdA';
+
+// Site slug comes from query string: ?site=jiacpr
+// Default to jiacpr if not specified
+const params = new URLSearchParams(window.location.search);
+const site = params.get('site') || 'jiacpr';
+
+// Domain map for "อ่านต่อ" button
+const DOMAINS = {
+  jiacpr:  'jiacpr.com',
+  jia1669: 'jia1669.com',
+  morroo:  'morroo.com',
+  pharmru: 'pharmru.com',
+  roodee:  'roodee.me',
+  emr:     'emr.morroo.com',
+};
+
+async function load() {
+  const app = document.getElementById('app');
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=*`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': `Bearer ${SUPABASE_ANON}`,
+        }
+      }
+    );
+    const data = await res.json();
+    if (!data || data.length === 0) {
+      app.innerHTML = '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
+      return;
+    }
+    const post = data[0];
+    const domain = DOMAINS[site] || site;
+    const readMoreUrl = `https://${domain}/blog/${encodeURIComponent(post.url_slug)}`;
+
+    app.innerHTML = `
+      ${post.content_html}
+      <div class="read-more-wrap">
+        <a class="read-more-btn" href="${readMoreUrl}" target="_top">
+          อ่านบทความเต็มที่ ${domain} →
+        </a>
+      </div>
+    `;
+  } catch (e) {
+    app.innerHTML = `<div class="empty">เกิดข้อผิดพลาด: ${e.message}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
