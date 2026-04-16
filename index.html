@@ -3,15 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เธงเธฑเธ้เธิเธตเธิเธต เธืเธตเน่เธ้เธงเธฃเธฃเธนเน้</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700;800&display=swap" rel="stylesheet">
+<title>วันดีดี ที่ควรรู้</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Sarabun', sans-serif;
-    background: transparent;
-    color: #222;
-  }
+  body { font-family: 'Sarabun', sans-serif; background: #fff; color: #222; }
+
+  /* ===== CARD MODE (home page widget) ===== */
   .card {
     max-width: 900px;
     margin: 0 auto;
@@ -22,102 +20,101 @@
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-    overflow: hidden;
   }
   .card-img {
-    width: 180px;
-    min-width: 180px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 10px;
-    flex-shrink: 0;
+    width: 180px; min-width: 180px; height: 120px;
+    object-fit: cover; border-radius: 10px; flex-shrink: 0;
   }
   .card-body { flex: 1; min-width: 0; }
   .badge {
-    display: inline-block;
-    font-size: 13px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    margin-bottom: 8px;
+    display: inline-block; font-size: 13px;
+    padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;
   }
-  .card-title {
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1.3;
-    margin-bottom: 6px;
-    color: #111;
-  }
+  .card-title { font-size: 22px; font-weight: 800; line-height: 1.3; margin-bottom: 6px; }
   .card-desc {
-    font-size: 15px;
-    color: #666;
-    line-height: 1.5;
-    margin-bottom: 12px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 12px;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
   }
   .read-btn {
-    display: inline-block;
-    color: #fff;
-    padding: 8px 20px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 15px;
-    font-weight: 700;
+    display: inline-block; color: #fff;
+    padding: 9px 22px; border-radius: 6px;
+    text-decoration: none; font-size: 15px;
   }
-  .loading, .empty {
-    padding: 20px;
-    text-align: center;
-    color: #aaa;
-    font-size: 16px;
+
+  /* ===== FULL ARTICLE MODE ===== */
+  .full-wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
+  .full-wrap img { max-width: 100%; border-radius: 12px; margin-bottom: 20px; }
+  .back-btn {
+    display: inline-block; margin-bottom: 16px;
+    color: #666; text-decoration: none; font-size: 14px;
   }
+
+  .loading, .empty { padding: 32px; text-align: center; color: #aaa; }
+
   @media (max-width: 600px) {
-    .card { flex-direction: column; gap: 12px; }
+    .card { flex-direction: column; }
     .card-img { width: 100%; min-width: 0; height: 180px; }
-    .card-title { font-size: 20px; }
   }
 </style>
 </head>
 <body>
-<div id="app"><div class="loading">โํณ เธ»เธณเธฅเธฑเธ์เน…เธซเธฅเธิ...</div></div>
+<div id="app"><div class="loading">⏳ กำลังโหลด...</div></div>
 <script>
 const SUPABASE_URL = 'https://tpoiyykbgsgnrdwzgzvn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwb2l5eWtiZ3NnbnJkd3pnenZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTUwMDIsImV4cCI6MjA5MDIzMTAwMn0.c7Ow_20mpmcDqDdMQ5qnsDV6-RKAO-7-eM1y-EsEXdA';
+
 const params = new URLSearchParams(window.location.search);
 const site = params.get('site') || 'jiacpr';
-const DOMAINS = { jiacpr:'jiacpr.com', jia1669:'jia1669.com', morroo:'morroo.com', pharmru:'pharmru.com', roodee:'roodee.me', emr:'emr.morroo.com' };
+const isFull = params.get('full') === '1';
+
 const COLORS = { jiacpr:'#1B5E20', jia1669:'#0D47A1', morroo:'#6A1B9A', pharmru:'#004D40', roodee:'#E65100', emr:'#0277BD' };
 
 async function load() {
   const app = document.getElementById('app');
+  const color = COLORS[site] || '#333';
+
   try {
+    const fields = isFull
+      ? '*'
+      : 'title,meta_description,cover_image_url,url_slug,category,published_at';
+
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=title,meta_description,cover_image_url,url_slug,category,published_at`,
+      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=${fields}`,
       { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } }
     );
     const data = await res.json();
     if (!data || data.length === 0) {
-      app.innerHTML = '<div class="empty">เธขเธฑเธ์เน้เธกเน่เธกเธตเธ๊เธืเธ้เธงเธฒเธกเน่เธ้เธงเธฑเธ้เธ้เธตเน้</div>';
+      app.innerHTML = '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
       return;
     }
     const post = data[0];
-    const domain = DOMAINS[site] || site;
-    const color = COLORS[site] || '#333';
-    const readMoreUrl = `https://${domain}/blog/${encodeURIComponent(post.url_slug)}`;
     const dateStr = new Date(post.published_at).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
-    app.innerHTML = `
-      <div class="card">
-        ${post.cover_image_url ? `<img class="card-img" src="${post.cover_image_url}" alt="${post.title}">` : ''}
-        <div class="card-body">
-          <div class="badge" style="background:${color}18;color:${color};">${post.category || 'เธงเธฑเธ้เธิเธตเธิเธต'} ยท ${dateStr}</div>
-          <div class="card-title">${post.title}</div>
-          ${post.meta_description ? `<div class="card-desc">${post.meta_description}</div>` : ''}
-          <a class="read-btn" href="${readMoreUrl}" target="_top" style="background:${color};">เธญเน่เธฒเธ้เธีเน่เธญ โ๋ั</a>
-        </div>
-      </div>`;
+
+    if (isFull) {
+      // Full article view
+      document.title = post.title;
+      app.innerHTML = `
+        <div class="full-wrap">
+          <a class="back-btn" href="?site=${site}" target="_top">← กลับ</a>
+          ${post.content_html || ''}
+        </div>`;
+    } else {
+      // Card view — "อ่านต่อ" opens full article on this same Vercel site
+      const fullUrl = `https://goody-bay.vercel.app/?site=${site}&full=1`;
+      app.innerHTML = `
+        <div class="card">
+          ${post.cover_image_url ? `<img class="card-img" src="${post.cover_image_url}" alt="${post.title}">` : ''}
+          <div class="card-body">
+            <div class="badge" style="background:${color}18;color:${color};">${post.category || 'วันดีดี'} · ${dateStr}</div>
+            <div class="card-title">${post.title}</div>
+            ${post.meta_description ? `<div class="card-desc">${post.meta_description}</div>` : ''}
+            <a class="read-btn" href="${fullUrl}" target="_blank" style="background:${color};">อ่านบทความเต็ม</a>
+          </div>
+        </div>`;
+    }
   } catch(e) {
-    app.innerHTML = `<div class="empty">เน«เธ»เธดเธิเธ…เน้เธญเธ์เธดเธิเธ’เธฅเธฒเธิ: ${e.message}</div>`;
+    app.innerHTML = `<div class="empty">เกิดข้อผิดพลาด: ${e.message}</div>`;
   }
 }
 load();
