@@ -44,7 +44,19 @@
 
   /* ===== FULL ARTICLE MODE ===== */
   .full-wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
-  .full-wrap img { max-width: 100%; border-radius: 12px; margin-bottom: 20px; }
+  .full-wrap img {
+    display: block;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    margin: 0 auto 20px;
+  }
+  .full-wrap figure { margin: 0 0 20px; text-align: center; }
+  .full-wrap figure img { margin-bottom: 8px; }
+  .full-wrap figcaption { font-size: 14px; color: #666; }
+  .full-wrap p { line-height: 1.7; margin-bottom: 16px; }
+  .full-wrap h1, .full-wrap h2, .full-wrap h3 { line-height: 1.3; margin: 24px 0 12px; }
   .back-btn {
     display: inline-block; margin-bottom: 16px;
     color: #666; text-decoration: none; font-size: 14px;
