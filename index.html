@@ -63,6 +63,40 @@
     color: #666; text-decoration: none; font-size: 14px;
   }
 
+  /* ===== OTHER ARTICLES LIST (in full view) ===== */
+  .other-articles {
+    margin-top: 40px; padding-top: 24px;
+    border-top: 1px solid #eee;
+  }
+  .other-title {
+    font-size: 18px; font-weight: 800;
+    margin-bottom: 16px; color: #333;
+  }
+  .other-list { display: grid; gap: 8px; }
+  .other-card {
+    display: flex; gap: 12px; align-items: center;
+    padding: 8px; border-radius: 10px;
+    text-decoration: none; color: inherit;
+    transition: background 0.15s;
+  }
+  .other-card:hover { background: #f5f5f5; }
+  .other-img {
+    width: 80px; min-width: 80px; height: 60px;
+    object-fit: contain; background: #f5f5f5;
+    border-radius: 6px; display: block;
+  }
+  .other-body { flex: 1; min-width: 0; }
+  .other-date {
+    font-size: 12px; font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .other-name {
+    font-size: 15px; font-weight: 700;
+    line-height: 1.3; color: #222;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+
   .loading, .empty { padding: 32px; text-align: center; color: #aaa; }
 
   @media (max-width: 600px) {
@@ -83,6 +117,15 @@ const isFull = params.get('full') === '1';
 
 const COLORS = { jiacpr:'#1B5E20', jia1669:'#0D47A1', morroo:'#6A1B9A', pharmru:'#004D40', roodee:'#E65100', emr:'#0277BD' };
 
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function fmtDate(s) {
+  return new Date(s).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
+}
+
 async function load() {
   const app = document.getElementById('app');
   const color = COLORS[site] || '#333';
@@ -92,8 +135,10 @@ async function load() {
       ? '*'
       : 'title,meta_description,cover_image_url,url_slug,category,published_at';
 
+    const limit = isFull ? 5 : 1;
+
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=${fields}`,
+      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=${limit}&select=${fields}`,
       { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } }
     );
     const data = await res.json();
@@ -101,19 +146,42 @@ async function load() {
       app.innerHTML = '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
       return;
     }
-    const post = data[0];
-    const dateStr = new Date(post.published_at).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
 
     if (isFull) {
-      // Full article view
-      document.title = post.title;
+      // Full article view — pick current by ?slug= or default to latest
+      const slug = params.get('slug');
+      const current = (slug && data.find(p => p.url_slug === slug)) || data[0];
+      const others = data.filter(p => p.url_slug !== current.url_slug);
+      document.title = current.title;
+
+      const baseUrl = `?site=${encodeURIComponent(site)}&full=1`;
+      const othersHtml = others.length ? `
+        <div class="other-articles">
+          <h3 class="other-title">บทความก่อนหน้า</h3>
+          <div class="other-list">
+            ${others.map(p => `
+              <a class="other-card" href="${baseUrl}&slug=${encodeURIComponent(p.url_slug)}" target="_top">
+                ${p.cover_image_url
+                  ? `<img class="other-img" src="${escapeHtml(p.cover_image_url)}" alt="">`
+                  : '<div class="other-img"></div>'}
+                <div class="other-body">
+                  <div class="other-date" style="color:${color};">${escapeHtml(fmtDate(p.published_at))}</div>
+                  <div class="other-name">${escapeHtml(p.title)}</div>
+                </div>
+              </a>`).join('')}
+          </div>
+        </div>` : '';
+
       app.innerHTML = `
         <div class="full-wrap">
-          <a class="back-btn" href="?site=${site}" target="_top">← กลับ</a>
-          ${post.content_html || ''}
+          <a class="back-btn" href="?site=${encodeURIComponent(site)}" target="_top">← กลับ</a>
+          ${current.content_html || ''}
+          ${othersHtml}
         </div>`;
     } else {
       // Card view — "อ่านต่อ" opens full article on this same Vercel site
+      const post = data[0];
+      const dateStr = fmtDate(post.published_at);
       const fullUrl = `https://goody-bay.vercel.app/?site=${site}&full=1`;
       app.innerHTML = `
         <div class="card">
