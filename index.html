@@ -92,8 +92,12 @@ async function load() {
       ? '*'
       : 'title,meta_description,cover_image_url,url_slug,category,published_at';
 
+    const bkkDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+    const startISO = new Date(`${bkkDateStr}T00:00:00+07:00`).toISOString();
+    const endISO = new Date(`${bkkDateStr}T23:59:59.999+07:00`).toISOString();
+
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=${fields}`,
+      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&published_at=gte.${encodeURIComponent(startISO)}&published_at=lte.${encodeURIComponent(endISO)}&order=published_at.desc&limit=1&select=${fields}`,
       { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } }
     );
     const data = await res.json();
