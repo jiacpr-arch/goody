@@ -9,9 +9,8 @@ if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY missi
 if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY missing");
 
 const RSS_FEEDS = [
-  { name: "Hfocus", url: "https://www.hfocus.org/rss.xml" },
   { name: "BBC Thai", url: "https://feeds.bbci.co.uk/thai/rss.xml" },
-  { name: "ThaiPBS", url: "https://www.thaipbs.or.th/rss/news" },
+  { name: "Hfocus", url: "https://www.hfocus.org/rss.xml" },
 ];
 
 const HEALTH_KEYWORDS = [
@@ -35,7 +34,10 @@ async function fetchRssItems(feed) {
       return [];
     }
     const xml = await res.text();
-    const parser = new XMLParser({ ignoreAttributes: false });
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      processEntities: false,
+    });
     const doc = parser.parse(xml);
     const items = doc?.rss?.channel?.item || doc?.feed?.entry || [];
     const arr = Array.isArray(items) ? items : [items];
@@ -69,9 +71,45 @@ function stripHtml(s) {
   return (s || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 500);
 }
 
-async function writeArticle(items) {
-  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+const ARTICLE_TOOL = {
+  name: "publish_article",
+  description: "Publish a Thai-language health article to the blog.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "หัวข้อเร้าใจ ไม่เกิน 80 ตัวอักษร" },
+      meta_description: {
+        type: "string",
+        description: "สรุปสั้น 1-2 ประโยค ไม่เกิน 160 ตัวอักษร",
+      },
+      content_html: {
+        type: "string",
+        description:
+          "บทความเต็ม HTML (ใช้ <p>, <h2>, <ul>, <li>, <a>) ไม่ต้อง escape quotes ใส่ credit ท้ายบทความถ้ามี",
+      },
+      category: { type: "string", description: "หมวดหมู่ เช่น 'ข่าวสุขภาพ' หรือ 'เกร็ดสุขภาพ'" },
+      cover_image_url: { type: "string", description: "URL รูปปก (ว่างถ้าไม่มี)" },
+      source_url: { type: "string", description: "URL ต้นฉบับ (ว่างถ้าไม่มี)" },
+    },
+    required: ["title", "meta_description", "content_html", "category"],
+  },
+};
 
+async function callArticleTool(prompt) {
+  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const msg = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 2500,
+    tools: [ARTICLE_TOOL],
+    tool_choice: { type: "tool", name: "publish_article" },
+    messages: [{ role: "user", content: prompt }],
+  });
+  const toolUse = msg.content.find((b) => b.type === "tool_use");
+  if (!toolUse) throw new Error("Claude did not return tool_use block");
+  return toolUse.input;
+}
+
+async function writeArticle(items) {
   const itemList = items
     .slice(0, 15)
     .map(
@@ -86,59 +124,23 @@ ${itemList}
 
 ภารกิจ:
 1. เลือกข่าว 1 ชิ้นที่น่าสนใจและมีประโยชน์ต่อคนอ่านทั่วไปที่สุด
-2. เขียนบทความใหม่เป็นภาษาไทย สไตล์อ่านง่าย ให้ข้อมูลแบบเกร็ดความรู้/ข่าวสั้น ประมาณ 400-600 คำ
-3. ไม่ copy ต้นฉบับ เขียนใหม่ด้วยสำนวนตัวเอง
-4. ใส่ credit แหล่งข่าวท้ายบทความ
+2. เขียนบทความใหม่เป็นภาษาไทย สไตล์อ่านง่าย เนื้อหาประมาณ 400-600 คำ
+3. เขียนใหม่ด้วยสำนวนตัวเอง ไม่ copy ต้นฉบับ
+4. ใส่ credit แหล่งข่าวท้ายบทความในรูปแบบ <p>ที่มา: <a href="URL">ชื่อแหล่ง</a></p>
+5. category ให้ใช้ "ข่าวสุขภาพ"
 
-ตอบเป็น JSON object เท่านั้น รูปแบบ:
-{
-  "title": "หัวข้อเร้าใจ ไม่เกิน 80 ตัวอักษร",
-  "meta_description": "สรุปสั้น 1-2 ประโยค ไม่เกิน 160 ตัวอักษร",
-  "content_html": "<p>...</p><h2>...</h2><p>...</p><p>ที่มา: <a href=\\"URL\\">ชื่อแหล่ง</a></p>",
-  "category": "ข่าวสุขภาพ",
-  "cover_image_url": "",
-  "source_url": "URL ต้นฉบับ"
-}`;
+จบแล้วเรียก tool publish_article`;
 
-  const msg = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2000,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Claude returned no JSON");
-  return JSON.parse(jsonMatch[0]);
+  return await callArticleTool(prompt);
 }
 
 async function writeFallbackTip() {
-  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
   const today = new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok" });
-  const msg = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1500,
-    messages: [
-      {
-        role: "user",
-        content: `เขียนเกร็ดความรู้สุขภาพประจำวัน ${today} เป็นภาษาไทย อ่านง่าย ประมาณ 300-500 คำ เลือก topic หมุนเวียน (โภชนาการ ออกกำลัง การนอน สุขภาพจิต โรคทั่วไป ฯลฯ)
+  const prompt = `เขียนเกร็ดความรู้สุขภาพประจำวัน ${today} เป็นภาษาไทย อ่านง่าย ประมาณ 300-500 คำ เลือก topic หมุนเวียน (โภชนาการ ออกกำลัง การนอน สุขภาพจิต โรคทั่วไป ฯลฯ)
 
-ตอบเป็น JSON object เท่านั้น:
-{
-  "title": "หัวข้อเร้าใจ ไม่เกิน 80 ตัวอักษร",
-  "meta_description": "สรุปสั้น 1-2 ประโยค ไม่เกิน 160 ตัวอักษร",
-  "content_html": "<p>...</p><h2>...</h2><p>...</p>",
-  "category": "เกร็ดสุขภาพ",
-  "cover_image_url": "",
-  "source_url": ""
-}`,
-      },
-    ],
-  });
-  const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Claude returned no JSON");
-  return JSON.parse(jsonMatch[0]);
+category ให้ใช้ "เกร็ดสุขภาพ" ไม่มี source_url
+จบแล้วเรียก tool publish_article`;
+  return await callArticleTool(prompt);
 }
 
 function slugify(s) {
