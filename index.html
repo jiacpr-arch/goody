@@ -12,7 +12,7 @@
   /* ===== CARD MODE (home page widget) ===== */
   .card {
     max-width: 900px;
-    margin: 0 auto;
+    margin: 0 auto 16px;
     padding: 12px;
     display: flex;
     gap: 20px;
@@ -21,6 +21,7 @@
     border-radius: 16px;
     box-shadow: 0 2px 16px rgba(0,0,0,0.08);
   }
+  .card:last-child { margin-bottom: 0; }
   .card-img {
     width: 180px; min-width: 180px; height: 120px;
     object-fit: contain; background: #f5f5f5;
@@ -81,19 +82,52 @@ const params = new URLSearchParams(window.location.search);
 const site = params.get('site') || 'jiacpr';
 const isFull = params.get('full') === '1';
 
-const COLORS = { jiacpr:'#1B5E20', jia1669:'#0D47A1', morroo:'#6A1B9A', pharmru:'#004D40', roodee:'#E65100', emr:'#0277BD' };
+const COLORS = { jiacpr:'#1B5E20', jia1669:'#0D47A1', morroo:'#6A1B9A', pharmru:'#004D40', roodee:'#E65100', emr:'#0277BD', health:'#00695C' };
+const DEFAULT_LABELS = { health: 'ข่าวสุขภาพ' };
+
+const HEADERS = { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` };
+
+async function fetchLatestPost(siteSlug) {
+  const todayBkk = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const data = await (await fetch(
+    `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(siteSlug)}&order=published_at.desc&limit=50&select=*`,
+    { headers: HEADERS }
+  )).json();
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const post = data.find(p =>
+    Object.values(p).some(v => typeof v === 'string' && v.startsWith(todayBkk))
+  ) || data[0];
+  return post;
+}
+
+function renderCard(post, siteSlug) {
+  if (!post) return '';
+  const color = COLORS[siteSlug] || '#333';
+  const rawDate = Object.values(post).find(v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v))
+    || post.published_at;
+  const dateStr = new Date(rawDate).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
+  const category = post.category || DEFAULT_LABELS[siteSlug] || 'วันดีดี';
+  const fullUrl = `https://goody-bay.vercel.app/?site=${siteSlug}&full=1`;
+  return `
+    <div class="card">
+      ${post.cover_image_url ? `<img class="card-img" src="${post.cover_image_url}" alt="${post.title}">` : ''}
+      <div class="card-body">
+        <div class="badge" style="background:${color}18;color:${color};">${category} · ${dateStr}</div>
+        <div class="card-title">${post.title}</div>
+        ${post.meta_description ? `<div class="card-desc">${post.meta_description}</div>` : ''}
+        <a class="read-btn" href="${fullUrl}" target="_blank" style="background:${color};">อ่านบทความเต็ม</a>
+      </div>
+    </div>`;
+}
 
 async function load() {
   const app = document.getElementById('app');
-  const color = COLORS[site] || '#333';
 
   try {
-    const headers = { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` };
-
     if (isFull) {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=*`,
-        { headers }
+        { headers: HEADERS }
       );
       const data = await res.json();
       if (!data || data.length === 0) {
@@ -110,37 +144,17 @@ async function load() {
       return;
     }
 
-    // Card mode: fetch 50 posts and find today's by scanning all columns
-    const todayBkk = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
-    const data = await (await fetch(
-      `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=50&select=*`,
-      { headers }
-    )).json();
+    const [mainPost, healthPost] = await Promise.all([
+      fetchLatestPost(site),
+      site === 'health' ? Promise.resolve(null) : fetchLatestPost('health'),
+    ]);
 
-    if (!data || data.length === 0) {
+    if (!mainPost && !healthPost) {
       app.innerHTML = '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
       return;
     }
 
-    const post = data.find(p =>
-      Object.values(p).some(v => typeof v === 'string' && v.startsWith(todayBkk))
-    ) || data[0];
-
-    const rawDate = Object.values(post).find(v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v))
-      || post.published_at;
-    const dateStr = new Date(rawDate).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
-
-    const fullUrl = `https://goody-bay.vercel.app/?site=${site}&full=1`;
-    app.innerHTML = `
-      <div class="card">
-        ${post.cover_image_url ? `<img class="card-img" src="${post.cover_image_url}" alt="${post.title}">` : ''}
-        <div class="card-body">
-          <div class="badge" style="background:${color}18;color:${color};">${post.category || 'วันดีดี'} · ${dateStr}</div>
-          <div class="card-title">${post.title}</div>
-          ${post.meta_description ? `<div class="card-desc">${post.meta_description}</div>` : ''}
-          <a class="read-btn" href="${fullUrl}" target="_blank" style="background:${color};">อ่านบทความเต็ม</a>
-        </div>
-      </div>`;
+    app.innerHTML = renderCard(mainPost, site) + renderCard(healthPost, 'health');
   } catch(e) {
     app.innerHTML = `<div class="empty">เกิดข้อผิดพลาด: ${e.message}</div>`;
   }
