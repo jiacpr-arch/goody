@@ -168,9 +168,6 @@ async function insertPost(article) {
     published_at: nowISO,
   };
 
-  console.log("Payload keys:", Object.keys(payload));
-  console.log("Payload JSON (first 500):", JSON.stringify(payload).slice(0, 500));
-
   const res = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts`, {
     method: "POST",
     headers: {
