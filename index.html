@@ -103,7 +103,7 @@ async function fetchLatestPost(siteSlug) {
 function renderCard(post, siteSlug) {
   if (!post) return '';
   const color = COLORS[siteSlug] || '#333';
-  const rawDate = Object.values(post).find(v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v))
+  const rawDate = Object.values(post).find(v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}(T|$)/.test(v))
     || post.published_at;
   const dateStr = new Date(rawDate).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
   const category = post.category || DEFAULT_LABELS[siteSlug] || 'วันดีดี';
