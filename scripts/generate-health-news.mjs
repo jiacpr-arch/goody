@@ -185,7 +185,22 @@ async function insertPost(article) {
   return res.status === 201 ? { ok: true } : await res.json();
 }
 
+async function alreadyPostedToday(siteSlug) {
+  const todayBkk = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${siteSlug}&published_at=gte.${todayBkk}T00:00:00Z&limit=1&select=id`,
+    { headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }
+  );
+  const data = await res.json();
+  return Array.isArray(data) && data.length > 0;
+}
+
 async function main() {
+  if (await alreadyPostedToday("health")) {
+    console.log("Already posted today — skipping.");
+    return;
+  }
+
   console.log("Fetching RSS feeds...");
   const items = await gatherHealthItems();
   console.log(`Found ${items.length} health-related items`);
@@ -201,8 +216,8 @@ async function main() {
 
   console.log("Title:", article.title);
   console.log("Inserting to Supabase...");
-  const result = await insertPost(article);
-  console.log("Inserted:", result?.[0]?.id || "(unknown id)");
+  await insertPost(article);
+  console.log("Done ✓");
 }
 
 main().catch((e) => {

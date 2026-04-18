@@ -123,11 +123,25 @@ async function insertPost(article, siteSlug) {
   }
 }
 
+async function alreadyPostedToday(siteSlug) {
+  const todayBkk = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${siteSlug}&published_at=gte.${todayBkk}T00:00:00Z&limit=1&select=id`,
+    { headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }
+  );
+  const data = await res.json();
+  return Array.isArray(data) && data.length > 0;
+}
+
 async function main() {
   const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
   for (const site of SITES) {
     try {
+      if (await alreadyPostedToday(site.slug)) {
+        console.log(`[${site.slug}] Already posted today — skipping.`);
+        continue;
+      }
       console.log(`\n[${site.slug}] Generating...`);
       const article = await generateForSite(site, anthropic);
       console.log(`[${site.slug}] Title: ${article.title}`);
