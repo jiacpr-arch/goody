@@ -7,7 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Sarabun', sans-serif; background: #fff; color: #222; }
+  html, body { overflow: hidden; }
+  body { font-family: 'Sarabun', sans-serif; background: #fff; color: #222; padding: 8px 0; }
 
   /* ===== CARD MODE (home page widget) ===== */
   .card {
@@ -158,7 +159,17 @@ async function load() {
   } catch(e) {
     app.innerHTML = `<div class="empty">เกิดข้อผิดพลาด: ${e.message}</div>`;
   }
+  postHeight();
+  document.querySelectorAll('img').forEach(img => img.addEventListener('load', postHeight));
 }
+
+function postHeight() {
+  if (window.parent === window) return;
+  const h = Math.ceil(document.documentElement.scrollHeight);
+  window.parent.postMessage({ source: 'goody', height: h }, '*');
+}
+window.addEventListener('resize', postHeight);
+
 load();
 </script>
 </body>
