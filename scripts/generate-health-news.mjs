@@ -166,7 +166,6 @@ async function insertPost(article) {
     cover_image_url: article.cover_image_url || null,
     url_slug: `${bkkDateStr}-${slugify(article.title)}`,
     published_at: nowISO,
-    date: bkkDateStr,
   };
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts`, {
