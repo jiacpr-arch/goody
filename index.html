@@ -30,10 +30,13 @@
   }
   .card-body { flex: 1; min-width: 0; }
   .badge {
-    display: inline-block; font-size: 13px;
-    padding: 0; margin-bottom: 4px;
-    background: transparent; color: #888;
+    display: inline-block; font-size: 12px;
+    padding: 3px 10px; margin-bottom: 8px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 999px; font-weight: 700;
+    letter-spacing: 0.02em;
   }
+  .card-date { font-size: 12px; color: #999; margin-bottom: 6px; }
   .card-title { font-size: 20px; font-weight: 800; line-height: 1.3; margin-bottom: 6px; }
   .card-desc {
     font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 8px;
@@ -112,16 +115,16 @@ function renderCard(post, siteSlug) {
     || post.published_at;
   const dateStr = new Date(rawDate).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
   const category = post.category || DEFAULT_LABELS[siteSlug] || '';
-  const fullUrl = `https://goody-bay.vercel.app/?site=${siteSlug}&full=1`;
-  const label = category ? `${category} · ${dateStr}` : dateStr;
+  const fullUrl = `?site=${siteSlug}&full=1${site !== siteSlug ? `&from=${site}` : ''}`;
   return `
     <div class="card">
       ${post.cover_image_url ? `<img class="card-img" src="${post.cover_image_url}" alt="${post.title}">` : ''}
       <div class="card-body">
-        <div class="badge">${label}</div>
+        ${category ? `<div class="badge" style="background:${color}1A;color:${color};">${category}</div>` : ''}
+        <div class="card-date">${dateStr}</div>
         <div class="card-title">${post.title}</div>
         ${post.meta_description ? `<div class="card-desc">${post.meta_description}</div>` : ''}
-        <a class="read-btn" href="${fullUrl}" target="_blank" style="color:${color};">อ่านบทความเต็ม</a>
+        <a class="read-btn" href="${fullUrl}" style="color:${color};">อ่านบทความเต็ม</a>
       </div>
     </div>`;
 }
@@ -142,9 +145,10 @@ async function load() {
       }
       const post = data[0];
       document.title = post.title;
+      const backSite = params.get('from') || site;
       app.innerHTML = `
         <div class="full-wrap">
-          <a class="back-btn" href="?site=${site}" target="_top">← กลับ</a>
+          <a class="back-btn" href="?site=${backSite}${type ? `&type=${type}` : ''}">← กลับ</a>
           ${post.content_html || ''}
         </div>`;
       return;
