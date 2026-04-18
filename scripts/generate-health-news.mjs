@@ -168,13 +168,15 @@ async function insertPost(article) {
     published_at: nowISO,
   };
 
+  console.log("Payload keys:", Object.keys(payload));
+  console.log("Payload JSON (first 500):", JSON.stringify(payload).slice(0, 500));
+
   const res = await fetch(`${SUPABASE_URL}/rest/v1/blog_posts`, {
     method: "POST",
     headers: {
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       "Content-Type": "application/json",
-      Prefer: "return=representation",
     },
     body: JSON.stringify(payload),
   });
@@ -183,7 +185,7 @@ async function insertPost(article) {
     const body = await res.text();
     throw new Error(`Supabase insert failed: ${res.status} ${body}`);
   }
-  return await res.json();
+  return res.status === 201 ? { ok: true } : await res.json();
 }
 
 async function main() {
