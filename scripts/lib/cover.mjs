@@ -34,7 +34,7 @@ async function generateCoverBase(title, audience, togetherApiKey) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "black-forest-labs/FLUX.1-schnell-Free",
+      model: "black-forest-labs/FLUX.1-schnell",
       prompt: `Clean modern flat illustration for a Thai educational health article about "${title}". Audience: ${audience}. Soft pastel colors, minimal composition, no text, no letters, 16:9 banner composition, plenty of negative space at the bottom half for overlay.`,
       width: 1024,
       height: 576,
