@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -87,9 +88,15 @@ async function overlayTitle(imageBuffer, title, category) {
     .toBuffer();
 }
 
+function asciiStorageKey(urlSlug) {
+  const dateMatch = urlSlug.match(/^(\d{4}-\d{2}-\d{2})/);
+  const datePrefix = dateMatch ? dateMatch[1] : "nodate";
+  const hash = createHash("sha256").update(urlSlug).digest("hex").slice(0, 10);
+  return `${datePrefix}-${hash}`;
+}
+
 async function uploadCover(buffer, siteSlug, urlSlug, supabaseUrl, serviceRoleKey) {
-  const safeKey = encodeURIComponent(urlSlug);
-  const path = `${siteSlug}/${safeKey}.jpg`;
+  const path = `${siteSlug}/${asciiStorageKey(urlSlug)}.jpg`;
   const res = await fetch(`${supabaseUrl}/storage/v1/object/blog-covers/${path}`, {
     method: "POST",
     headers: {
