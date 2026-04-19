@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { XMLParser } from "fast-xml-parser";
+import { generateAndUploadCover } from "./lib/cover.mjs";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://tpoiyykbgsgnrdwzgzvn.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY;
 
 if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
 if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY missing");
@@ -88,7 +90,6 @@ const ARTICLE_TOOL = {
           "บทความเต็ม HTML (ใช้ <p>, <h2>, <ul>, <li>, <a>) ไม่ต้อง escape quotes ใส่ credit ท้ายบทความถ้ามี",
       },
       category: { type: "string", description: "หมวดหมู่ เช่น 'ข่าวสุขภาพ' หรือ 'เกร็ดสุขภาพ'" },
-      cover_image_url: { type: "string", description: "URL รูปปก (ว่างถ้าไม่มี)" },
       source_url: { type: "string", description: "URL ต้นฉบับ (ว่างถ้าไม่มี)" },
     },
     required: ["title", "meta_description", "content_html", "category"],
@@ -156,6 +157,17 @@ function slugify(s) {
 async function insertPost(article) {
   const bkkDateStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
   const nowISO = new Date().toISOString();
+  const urlSlug = `${bkkDateStr}-${slugify(article.title)}`;
+  const coverUrl = await generateAndUploadCover({
+    title: article.title,
+    category: article.category || "ข่าวสุขภาพ",
+    audience: "คนทั่วไปที่สนใจข่าวและเกร็ดสุขภาพ",
+    siteSlug: "health",
+    urlSlug,
+    togetherApiKey: TOGETHER_API_KEY,
+    supabaseUrl: SUPABASE_URL,
+    serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+  });
 
   const payload = {
     site_slug: "health",
@@ -163,8 +175,8 @@ async function insertPost(article) {
     meta_description: article.meta_description,
     content_html: article.content_html,
     category: article.category || "ข่าวสุขภาพ",
-    cover_image_url: article.cover_image_url || null,
-    url_slug: `${bkkDateStr}-${slugify(article.title)}`,
+    cover_image_url: coverUrl,
+    url_slug: urlSlug,
     published_at: nowISO,
   };
 
