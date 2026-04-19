@@ -157,6 +157,8 @@ async function load() {
       app.innerHTML = `
         <div class="full-wrap">
           <a class="back-btn" href="/?site=${site}" onclick="if(window.history.length>1){event.preventDefault();window.history.back();}">← กลับ</a>
+          ${post.cover_image_url ? `<img src="${post.cover_image_url}" alt="${post.title}">` : ''}
+          <h1>${post.title}</h1>
           ${post.content_html || ''}
         </div>`;
       return;
