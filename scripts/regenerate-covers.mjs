@@ -20,7 +20,7 @@ const HEADERS = {
 
 async function fetchPostsMissingCover() {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/blog_posts?cover_image_url=is.null&order=published_at.desc&limit=20&select=id,site_slug,title,category,url_slug`,
+    `${SUPABASE_URL}/rest/v1/blog_posts?cover_image_url=is.null&order=published_at.desc&limit=20&select=id,site_slug,title,url_slug`,
     { headers: HEADERS }
   );
   if (!res.ok) throw new Error(`Query failed: ${res.status} ${await res.text()}`);
@@ -45,7 +45,6 @@ async function main() {
     console.log(`\n[${p.site_slug}] ${p.title}`);
     const coverUrl = await generateAndUploadCover({
       title: p.title,
-      category: p.category,
       audience,
       siteSlug: p.site_slug,
       urlSlug: p.url_slug,
