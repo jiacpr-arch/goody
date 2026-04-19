@@ -88,7 +88,8 @@ async function overlayTitle(imageBuffer, title, category) {
 }
 
 async function uploadCover(buffer, siteSlug, urlSlug, supabaseUrl, serviceRoleKey) {
-  const path = `${siteSlug}/${urlSlug}.jpg`;
+  const safeKey = encodeURIComponent(urlSlug);
+  const path = `${siteSlug}/${safeKey}.jpg`;
   const res = await fetch(`${supabaseUrl}/storage/v1/object/blog-covers/${path}`, {
     method: "POST",
     headers: {
