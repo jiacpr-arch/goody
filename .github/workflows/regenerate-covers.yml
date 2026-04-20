@@ -2,6 +2,11 @@ name: Regenerate Missing Covers
 
 on:
   workflow_dispatch:
+    inputs:
+      force_days:
+        description: "Force-regenerate all posts from last N days (0 = missing covers only)"
+        required: false
+        default: "0"
 
 jobs:
   regenerate:
@@ -12,9 +17,10 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
-      - name: Regenerate covers for posts missing them
+      - name: Regenerate covers
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+          FORCE_DAYS: ${{ inputs.force_days }}
         run: node scripts/regenerate-covers.mjs

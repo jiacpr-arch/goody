@@ -3,6 +3,8 @@ import { generateAndUploadCover } from "./lib/cover.mjs";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://tpoiyykbgsgnrdwzgzvn.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY;
+// FORCE_DAYS=7 → regenerate all posts from last 7 days regardless of existing cover
+const FORCE_DAYS = process.env.FORCE_DAYS ? parseInt(process.env.FORCE_DAYS, 10) : 0;
 
 if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
 if (!TOGETHER_API_KEY) throw new Error("TOGETHER_API_KEY missing");
@@ -18,11 +20,16 @@ const HEADERS = {
   "Content-Type": "application/json",
 };
 
-async function fetchPostsMissingCover() {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/blog_posts?cover_image_url=is.null&order=published_at.desc&limit=20&select=id,site_slug,title,url_slug`,
-    { headers: HEADERS }
-  );
+async function fetchPosts() {
+  let url;
+  if (FORCE_DAYS > 0) {
+    const since = new Date(Date.now() - FORCE_DAYS * 86400_000).toISOString();
+    url = `${SUPABASE_URL}/rest/v1/blog_posts?published_at=gte.${since}&order=published_at.desc&limit=50&select=id,site_slug,title,url_slug`;
+    console.log(`Force mode: regenerating all posts from last ${FORCE_DAYS} day(s)`);
+  } else {
+    url = `${SUPABASE_URL}/rest/v1/blog_posts?cover_image_url=is.null&order=published_at.desc&limit=20&select=id,site_slug,title,url_slug`;
+  }
+  const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Query failed: ${res.status} ${await res.text()}`);
   return await res.json();
 }
@@ -37,8 +44,8 @@ async function updateCoverUrl(id, coverUrl) {
 }
 
 async function main() {
-  const posts = await fetchPostsMissingCover();
-  console.log(`Found ${posts.length} posts with missing covers`);
+  const posts = await fetchPosts();
+  console.log(`Found ${posts.length} posts to process`);
 
   for (const p of posts) {
     const audience = AUDIENCE[p.site_slug] || AUDIENCE.health;
