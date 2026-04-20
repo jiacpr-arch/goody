@@ -31,7 +31,8 @@ function asciiStorageKey(urlSlug) {
   const dateMatch = urlSlug.match(/^(\d{4}-\d{2}-\d{2})/);
   const datePrefix = dateMatch ? dateMatch[1] : "nodate";
   const hash = createHash("sha256").update(urlSlug).digest("hex").slice(0, 10);
-  return `${datePrefix}-${hash}`;
+  const nonce = Date.now().toString(36);
+  return `${datePrefix}-${hash}-${nonce}`;
 }
 
 async function uploadCover(buffer, siteSlug, urlSlug, supabaseUrl, serviceRoleKey) {
