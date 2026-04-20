@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview: Overlay styles</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: #f5f5f7; color: #222; padding: 20px; }
+  h2.section { font-size: 16px; margin: 24px 0 10px; color: #666; }
+  .sample { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+
+  /* ===== CURRENT STYLE (A) ===== */
+  .cardA { display: flex; gap: 14px; align-items: center; }
+  .cardA img { width: 140px; min-width: 140px; height: 90px; object-fit: cover; border-radius: 8px; }
+  .cardA-body { flex: 1; }
+  .cardA-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+  .cardA-desc { font-size: 14px; color: #666; line-height: 1.5; }
+
+  /* ===== CSS OVERLAY (B) — title ทับบนรูป, gradient ดำล่าง ===== */
+  .cardB {
+    position: relative; width: 100%; aspect-ratio: 16/9;
+    border-radius: 12px; overflow: hidden; cursor: pointer;
+  }
+  .cardB img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cardB-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.85) 100%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 20px;
+  }
+  .cardB-badge {
+    align-self: flex-start; font-size: 12px; color: #fff;
+    background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
+    padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .cardB-title { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.3; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+
+  /* ===== BAKE-IN MOCKUP (C) — จำลอง text ฝังในรูป (center + big) ===== */
+  .cardC { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; }
+  .cardC img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cardC-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    padding: 30px; text-align: center;
+  }
+  .cardC-title {
+    font-size: 32px; font-weight: 800; color: #fff; line-height: 1.2;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.9);
+    max-width: 800px;
+  }
+
+  @media (max-width: 600px) {
+    .cardA { flex-direction: column; align-items: flex-start; }
+    .cardA img { width: 100%; height: 160px; }
+    .cardC-title { font-size: 22px; }
+    .cardB-title { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">⏳ กำลังโหลด...</div>
+
+<script>
+const SUPABASE_URL = 'https://tpoiyykbgsgnrdwzgzvn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwb2l5eWtiZ3NnbnJkd3pnenZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTUwMDIsImV4cCI6MjA5MDIzMTAwMn0.c7Ow_20mpmcDqDdMQ5qnsDV6-RKAO-7-eM1y-EsEXdA';
+
+async function fetchLatest(site) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${site}&cover_image_url=not.is.null&order=published_at.desc&limit=1&select=*`,
+    { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+  );
+  const d = await r.json();
+  return d[0];
+}
+
+function render(post, label) {
+  const category = post.category || '';
+  return `
+    <h2 class="section">ตัวอย่าง [${label}] — ${post.title}</h2>
+
+    <div class="sample">
+      <div style="font-size:12px;color:#999;margin-bottom:8px;">A) เดิม — ภาพเล็กด้านซ้าย title ข้างๆ</div>
+      <div class="cardA">
+        <img src="${post.cover_image_url}" alt="">
+        <div class="cardA-body">
+          ${category ? `<div style="font-size:12px;color:#666;margin-bottom:4px;">${category}</div>` : ''}
+          <div class="cardA-title">${post.title}</div>
+          <div class="cardA-desc">${post.meta_description || ''}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sample">
+      <div style="font-size:12px;color:#999;margin-bottom:8px;">B) CSS overlay — title อยู่ล่างรูป มี gradient ดำ (แนะนำ)</div>
+      <div class="cardB">
+        <img src="${post.cover_image_url}" alt="">
+        <div class="cardB-overlay">
+          ${category ? `<span class="cardB-badge">${category}</span>` : ''}
+          <div class="cardB-title">${post.title}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sample">
+      <div style="font-size:12px;color:#999;margin-bottom:8px;">C) Bake-in mockup — title ใหญ่กลางรูป (สไตล์ thumbnail YouTube)</div>
+      <div class="cardC">
+        <img src="${post.cover_image_url}" alt="">
+        <div class="cardC-overlay">
+          <div class="cardC-title">${post.title}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+(async () => {
+  const [jia, health] = await Promise.all([fetchLatest('jiacpr'), fetchLatest('health')]);
+  const parts = [];
+  if (jia) parts.push(render(jia, 'jiacpr'));
+  if (health) parts.push(render(health, 'health'));
+  document.getElementById('app').innerHTML = parts.join('');
+})();
+</script>
+</body>
+</html>
