@@ -8,11 +8,10 @@ async function generateCover(title, audience, togetherApiKey) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "black-forest-labs/FLUX.1-dev",
+      model: "black-forest-labs/FLUX.1.1-pro",
       prompt: `Professional editorial photography illustrating a Thai health article titled "${title}". Target audience: ${audience}. Photorealistic, warm natural light, clean modern composition, shallow depth of field, shot in Thailand, real people or real objects relevant to the topic, no text, no letters, no watermarks. 16:9 aspect ratio.`,
       width: 1024,
       height: 576,
-      steps: 20,
       n: 1,
     }),
   });
