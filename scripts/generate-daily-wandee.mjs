@@ -117,6 +117,7 @@ async function insertPost(article, site) {
   const urlSlug = `${bkkDateStr}-${slugify(article.title)}`;
   const coverUrl = await generateAndUploadCover({
     title: article.title,
+    coverText: article.category,
     audience: site.audience,
     siteSlug: site.slug,
     urlSlug,
