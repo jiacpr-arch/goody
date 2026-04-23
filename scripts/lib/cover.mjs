@@ -119,6 +119,7 @@ async function uploadCover(buffer, siteSlug, urlSlug, supabaseUrl, serviceRoleKe
 
 export async function generateAndUploadCover({
   title,
+  coverText,
   audience,
   siteSlug,
   urlSlug,
@@ -132,7 +133,7 @@ export async function generateAndUploadCover({
   }
   try {
     const rawBuffer = await generateCover(title, audience, togetherApiKey);
-    const finalBuffer = await compositeTitle(rawBuffer, title);
+    const finalBuffer = await compositeTitle(rawBuffer, coverText || title);
     return await uploadCover(finalBuffer, siteSlug, urlSlug, supabaseUrl, serviceRoleKey);
   } catch (e) {
     console.error(`[${siteSlug}] Cover generation failed:`, e.message);
