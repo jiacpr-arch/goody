@@ -99,13 +99,19 @@ const isFull = params.get('full') === '1';
 const COLORS = { jiacpr:'#1B5E20', health:'#00695C' };
 const DEFAULT_LABELS = { health: 'ข่าวสุขภาพ' };
 
-const HEADERS = { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` };
+const HEADERS = {
+  'apikey': SUPABASE_ANON,
+  'Authorization': `Bearer ${SUPABASE_ANON}`,
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache',
+};
+const FETCH_OPTS = { headers: HEADERS, cache: 'no-store' };
 
 async function fetchLatestPost(siteSlug) {
   const todayBkk = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
   const data = await (await fetch(
     `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(siteSlug)}&order=published_at.desc&limit=50&select=*`,
-    { headers: HEADERS }
+    FETCH_OPTS
   )).json();
   if (!Array.isArray(data) || data.length === 0) return null;
   const post = data.find(p =>
@@ -145,7 +151,7 @@ async function load() {
       document.documentElement.classList.add('full');
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=*`,
-        { headers: HEADERS }
+        FETCH_OPTS
       );
       const data = await res.json();
       if (!data || data.length === 0) {
