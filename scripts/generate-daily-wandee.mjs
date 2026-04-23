@@ -93,15 +93,22 @@ ${site.examples}
 
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 2500,
+    max_tokens: 4096,
     tools: [ARTICLE_TOOL],
     tool_choice: { type: "tool", name: "publish_article" },
     messages: [{ role: "user", content: prompt }],
   });
 
+  if (msg.stop_reason === "max_tokens") {
+    throw new Error(`[${site.slug}] Claude hit max_tokens — article truncated`);
+  }
   const toolUse = msg.content.find((b) => b.type === "tool_use");
   if (!toolUse) throw new Error(`[${site.slug}] Claude did not return tool_use block`);
-  return toolUse.input;
+  const input = toolUse.input;
+  if (!input.content_html || !input.title) {
+    throw new Error(`[${site.slug}] tool_use missing required fields: ${JSON.stringify(Object.keys(input))}`);
+  }
+  return input;
 }
 
 async function insertPost(article, site) {
