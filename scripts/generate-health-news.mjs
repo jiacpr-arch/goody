@@ -97,7 +97,7 @@ const ARTICLE_TOOL = {
 };
 
 async function callArticleTool(prompt) {
-  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY, maxRetries: 5 });
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
