@@ -167,7 +167,6 @@ async function insertPost(article) {
   const urlSlug = `${bkkDateStr}-${slugify(article.title)}`;
   const coverUrl = await generateAndUploadCover({
     title: article.title,
-    coverText: article.category,
     audience: "คนทั่วไปที่สนใจข่าวและเกร็ดสุขภาพ",
     siteSlug: "health",
     urlSlug,

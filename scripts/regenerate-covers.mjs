@@ -24,10 +24,10 @@ async function fetchPosts() {
   let url;
   if (FORCE_DAYS > 0) {
     const since = new Date(Date.now() - FORCE_DAYS * 86400_000).toISOString();
-    url = `${SUPABASE_URL}/rest/v1/blog_posts?published_at=gte.${since}&order=published_at.desc&limit=50&select=id,site_slug,title,category,url_slug`;
+    url = `${SUPABASE_URL}/rest/v1/blog_posts?published_at=gte.${since}&order=published_at.desc&limit=50&select=id,site_slug,title,url_slug`;
     console.log(`Force mode: regenerating all posts from last ${FORCE_DAYS} day(s)`);
   } else {
-    url = `${SUPABASE_URL}/rest/v1/blog_posts?cover_image_url=is.null&order=published_at.desc&limit=20&select=id,site_slug,title,category,url_slug`;
+    url = `${SUPABASE_URL}/rest/v1/blog_posts?cover_image_url=is.null&order=published_at.desc&limit=20&select=id,site_slug,title,url_slug`;
   }
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Query failed: ${res.status} ${await res.text()}`);
@@ -52,7 +52,6 @@ async function main() {
     console.log(`\n[${p.site_slug}] ${p.title}`);
     const coverUrl = await generateAndUploadCover({
       title: p.title,
-      coverText: p.category,
       audience,
       siteSlug: p.site_slug,
       urlSlug: p.url_slug,
