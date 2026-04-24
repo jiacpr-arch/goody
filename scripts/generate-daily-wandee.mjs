@@ -164,7 +164,7 @@ async function alreadyPostedToday(siteSlug) {
 }
 
 async function main() {
-  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY, maxRetries: 5 });
 
   for (const site of SITES) {
     try {
