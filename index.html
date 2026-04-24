@@ -16,10 +16,9 @@
     display: block;
     position: relative;
     width: 100%;
-    aspect-ratio: 21 / 9;
-    max-height: 180px;
-    margin: 0 0 12px;
-    border-radius: 14px;
+    height: 130px;
+    margin: 0 0 10px;
+    border-radius: 12px;
     overflow: hidden;
     text-decoration: none;
     color: inherit;
@@ -37,27 +36,29 @@
   .card:hover .card-img { transform: scale(1.03); }
   .card-overlay {
     position: absolute; inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.6) 65%, rgba(0,0,0,0.88) 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.88) 100%);
     display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
   .card-meta {
     display: flex; align-items: center; gap: 8px;
-    margin-bottom: 4px; flex-wrap: wrap;
+    margin-bottom: 3px; flex-wrap: wrap;
   }
   .badge {
     display: inline-block; font-size: 11px;
-    padding: 3px 9px;
+    padding: 2px 8px;
     background: rgba(255,255,255,0.22);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: #fff;
     border-radius: 999px; font-weight: 700;
     letter-spacing: 0.02em;
+    max-width: 70%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .card-date { font-size: 11px; color: rgba(255,255,255,0.85); }
   .card-title {
-    font-size: 17px; font-weight: 800; line-height: 1.25;
+    font-size: 15px; font-weight: 800; line-height: 1.25;
     color: #fff;
     text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     display: -webkit-box; -webkit-line-clamp: 2;
@@ -87,9 +88,8 @@
   .loading, .empty { padding: 32px; text-align: center; color: #aaa; }
 
   @media (max-width: 600px) {
-    .card { aspect-ratio: 16 / 9; max-height: 200px; }
-    .card-title { font-size: 16px; -webkit-line-clamp: 2; }
-    .card-overlay { padding: 12px 14px; }
+    .card { height: 150px; }
+    .card-title { font-size: 15px; }
   }
 </style>
 </head>
