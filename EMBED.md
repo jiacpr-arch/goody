@@ -1,6 +1,57 @@
 # คู่มือฝัง goody บนเว็บไซต์ของคุณเอง
 
-โหลด `embed.js` แล้วเรียก `Goody.getLatestPost(siteSlug)` ได้ JSON กลับมา → จัดสไตล์ HTML/CSS เองตามแบรนด์ได้เต็มที่ ข้อมูลจะอัปเดตอัตโนมัติทุกวัน (ระบบสร้างโพสต์ใหม่ตอน 06:00 เวลาไทย ผ่าน GitHub Actions)
+มี 2 วิธี:
+
+- **วิธี A — iframe** (แนะนำ ถ้าอยากได้หน้าตาเหมือน `goody-bay.vercel.app` เลย ไม่ต้องเขียน CSS) → ดู [Quick start](#quick-start--iframe-เหมือนเดิม)
+- **วิธี B — JS SDK** (สำหรับคนที่อยากจัดสไตล์เองตามแบรนด์) → ดู [Custom styling](#custom-styling--js-sdk)
+
+ข้อมูลอัปเดตอัตโนมัติทุกวัน (ระบบสร้างโพสต์ใหม่ตอน 06:00 น. เวลาไทย ผ่าน GitHub Actions)
+
+---
+
+## Quick start — iframe (เหมือนเดิม)
+
+แค่วาง snippet นี้ในหน้าเว็บที่อยากให้ widget โผล่ ไม่ต้องเขียน CSS เพิ่ม:
+
+### morroo.com (วันดี)
+
+```html
+<iframe id="goody-wandee"
+  src="https://goody-bay.vercel.app/?site=jiacpr&type=wandee"
+  style="width:100%;border:0;display:block"
+  scrolling="no" loading="lazy"></iframe>
+<script>
+  window.addEventListener('message', (e) => {
+    if (e.data?.source === 'goody' && e.data.height) {
+      document.getElementById('goody-wandee').style.height = e.data.height + 'px';
+    }
+  });
+</script>
+```
+
+### pharmru.com (ข่าวสุขภาพ)
+
+```html
+<iframe id="goody-health"
+  src="https://goody-bay.vercel.app/?site=health&type=news"
+  style="width:100%;border:0;display:block"
+  scrolling="no" loading="lazy"></iframe>
+<script>
+  window.addEventListener('message', (e) => {
+    if (e.data?.source === 'goody' && e.data.height) {
+      document.getElementById('goody-health').style.height = e.data.height + 'px';
+    }
+  });
+</script>
+```
+
+iframe จะส่ง `postMessage` ความสูงของเนื้อหากลับมา → script ฝั่ง parent ปรับขนาด iframe ให้พอดีอัตโนมัติ ไม่ต้อง scroll ภายใน
+
+ถ้าหน้าเว็บมี Content Security Policy ต้อง allow `frame-src https://goody-bay.vercel.app`
+
+---
+
+## Custom styling — JS SDK
 
 ## API
 
