@@ -95,49 +95,23 @@
 </head>
 <body>
 <div id="app"><div class="loading">⏳ กำลังโหลด...</div></div>
+<script src="./embed.js"></script>
 <script>
-const SUPABASE_URL = 'https://tpoiyykbgsgnrdwzgzvn.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwb2l5eWtiZ3NnbnJkd3pnenZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTUwMDIsImV4cCI6MjA5MDIzMTAwMn0.c7Ow_20mpmcDqDdMQ5qnsDV6-RKAO-7-eM1y-EsEXdA';
-
 const params = new URLSearchParams(window.location.search);
 const site = params.get('site') || 'jiacpr';
 const type = params.get('type');
 const isFull = params.get('full') === '1';
 
-const COLORS = { jiacpr:'#1B5E20', health:'#00695C' };
 const DEFAULT_LABELS = { health: 'ข่าวสุขภาพ' };
-
-const HEADERS = {
-  'apikey': SUPABASE_ANON,
-  'Authorization': `Bearer ${SUPABASE_ANON}`,
-  'Cache-Control': 'no-cache',
-  'Pragma': 'no-cache',
-};
-const FETCH_OPTS = { headers: HEADERS, cache: 'no-store' };
-
-async function fetchLatestPost(siteSlug) {
-  const todayBkk = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
-  const data = await (await fetch(
-    `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(siteSlug)}&order=published_at.desc&limit=50&select=*`,
-    FETCH_OPTS
-  )).json();
-  if (!Array.isArray(data) || data.length === 0) return null;
-  const post = data.find(p =>
-    Object.values(p).some(v => typeof v === 'string' && v.startsWith(todayBkk))
-  ) || data[0];
-  return post;
-}
 
 function renderCard(post, siteSlug) {
   if (!post) return '';
-  const color = COLORS[siteSlug] || '#333';
   const rawDate = Object.values(post).find(v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}(T|$)/.test(v))
     || post.published_at;
   const dateStr = new Date(rawDate).toLocaleDateString('th-TH', { day:'numeric', month:'long' });
   const category = post.category || DEFAULT_LABELS[siteSlug] || '';
-  const fullUrl = `https://goody-bay.vercel.app/?site=${siteSlug}&full=1`;
   return `
-    <a class="card" href="${fullUrl}" target="_top">
+    <a class="card" href="${Goody.fullUrl(siteSlug)}" target="_top">
       ${post.cover_image_url ? `<img class="card-img" src="${post.cover_image_url}" alt="${post.title}">` : ''}
       <div class="card-overlay">
         <div class="card-meta">
@@ -155,16 +129,11 @@ async function load() {
   try {
     if (isFull) {
       document.documentElement.classList.add('full');
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/blog_posts?site_slug=eq.${encodeURIComponent(site)}&order=published_at.desc&limit=1&select=*`,
-        FETCH_OPTS
-      );
-      const data = await res.json();
-      if (!data || data.length === 0) {
+      const post = await Goody.getFullPost(site);
+      if (!post) {
         app.innerHTML = '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
         return;
       }
-      const post = data[0];
       document.title = post.title;
       app.innerHTML = `
         <div class="full-wrap">
@@ -177,15 +146,15 @@ async function load() {
     }
 
     if (type === 'wandee') {
-      const post = await fetchLatestPost(site);
+      const post = await Goody.getLatestPost(site);
       app.innerHTML = post ? renderCard(post, site) : '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
     } else if (type === 'news') {
-      const post = await fetchLatestPost('health');
+      const post = await Goody.getLatestPost('health');
       app.innerHTML = post ? renderCard(post, 'health') : '<div class="empty">ยังไม่มีข่าวในวันนี้</div>';
     } else {
       const [mainPost, healthPost] = await Promise.all([
-        fetchLatestPost(site),
-        site === 'health' ? Promise.resolve(null) : fetchLatestPost('health'),
+        Goody.getLatestPost(site),
+        site === 'health' ? Promise.resolve(null) : Goody.getLatestPost('health'),
       ]);
       if (!mainPost && !healthPost) {
         app.innerHTML = '<div class="empty">ยังไม่มีบทความในวันนี้</div>';
